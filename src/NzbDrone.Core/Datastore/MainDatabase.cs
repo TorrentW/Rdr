@@ -1,5 +1,8 @@
 ﻿using System;
-using Marr.Data;
+using System.Data;
+using Dapper.Contrib.Extensions;
+using NzbDrone.Core.Configuration;
+using NzbDrone.Core.Download;
 
 namespace NzbDrone.Core.Datastore
 {
@@ -15,9 +18,10 @@ namespace NzbDrone.Core.Datastore
         public MainDatabase(IDatabase database)
         {
             _database = database;
+
         }
 
-        public IDataMapper GetDataMapper()
+        public IDbConnection GetDataMapper()
         {
             return _database.GetDataMapper();
         }

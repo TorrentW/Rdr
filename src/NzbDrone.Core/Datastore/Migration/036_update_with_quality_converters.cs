@@ -6,7 +6,7 @@ using NzbDrone.Common.Serializer;
 using NzbDrone.Core.Profiles;
 using NzbDrone.Core.Qualities;
 using System.Collections.Generic;
-using NzbDrone.Core.Datastore.Converters;
+// using NzbDrone.Core.Datastore.Converters;
 
 namespace NzbDrone.Core.Datastore.Migration
 {
@@ -26,38 +26,38 @@ namespace NzbDrone.Core.Datastore.Migration
 
         private void ConvertQualityProfiles(IDbConnection conn, IDbTransaction tran)
         {
-            var qualityProfileItemConverter = new EmbeddedDocumentConverter(new QualityIntConverter());
+            // var qualityProfileItemConverter = new EmbeddedDocumentConverter(new QualityIntConverter());
 
-            // Convert 'Allowed' column in QualityProfiles from Json List<object> to Json List<int> (int = Quality)
-            using (IDbCommand qualityProfileCmd = conn.CreateCommand())
-            {
-                qualityProfileCmd.Transaction = tran;
-                qualityProfileCmd.CommandText = @"SELECT Id, Allowed FROM QualityProfiles";
-                using (IDataReader qualityProfileReader = qualityProfileCmd.ExecuteReader())
-                {
-                    while (qualityProfileReader.Read())
-                    {
-                        var id = qualityProfileReader.GetInt32(0);
-                        var allowedJson = qualityProfileReader.GetString(1);
+            // // Convert 'Allowed' column in QualityProfiles from Json List<object> to Json List<int> (int = Quality)
+            // using (IDbCommand qualityProfileCmd = conn.CreateCommand())
+            // {
+            //     qualityProfileCmd.Transaction = tran;
+            //     qualityProfileCmd.CommandText = @"SELECT Id, Allowed FROM QualityProfiles";
+            //     using (IDataReader qualityProfileReader = qualityProfileCmd.ExecuteReader())
+            //     {
+            //         while (qualityProfileReader.Read())
+            //         {
+            //             var id = qualityProfileReader.GetInt32(0);
+            //             var allowedJson = qualityProfileReader.GetString(1);
 
-                        var allowed = Json.Deserialize<List<Quality>>(allowedJson);
+            //             var allowed = Json.Deserialize<List<Quality>>(allowedJson);
 
-                        var items = Quality.DefaultQualityDefinitions.OrderBy(v => v.Weight).Select(v => new ProfileQualityItem { Quality = v.Quality, Allowed = allowed.Contains(v.Quality) }).ToList();
+            //             var items = Quality.DefaultQualityDefinitions.OrderBy(v => v.Weight).Select(v => new ProfileQualityItem { Quality = v.Quality, Allowed = allowed.Contains(v.Quality) }).ToList();
 
-                        var allowedNewJson = qualityProfileItemConverter.ToDB(items);
+            //             var allowedNewJson = qualityProfileItemConverter.ToDB(items);
 
-                        using (IDbCommand updateCmd = conn.CreateCommand())
-                        {
-                            updateCmd.Transaction = tran;
-                            updateCmd.CommandText = "UPDATE QualityProfiles SET Items = ? WHERE Id = ?";
-                            updateCmd.AddParameter(allowedNewJson);
-                            updateCmd.AddParameter(id);
+            //             using (IDbCommand updateCmd = conn.CreateCommand())
+            //             {
+            //                 updateCmd.Transaction = tran;
+            //                 updateCmd.CommandText = "UPDATE QualityProfiles SET Items = ? WHERE Id = ?";
+            //                 updateCmd.AddParameter(allowedNewJson);
+            //                 updateCmd.AddParameter(id);
 
-                            updateCmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-            }
+            //                 updateCmd.ExecuteNonQuery();
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         private void ConvertQualityModels(IDbConnection conn, IDbTransaction tran)
@@ -70,43 +70,43 @@ namespace NzbDrone.Core.Datastore.Migration
 
         private void ConvertQualityModel(IDbConnection conn, IDbTransaction tran, string tableName)
         {
-            var qualityModelConverter = new EmbeddedDocumentConverter(new QualityIntConverter());
+            // var qualityModelConverter = new EmbeddedDocumentConverter(new QualityIntConverter());
 
-            using (IDbCommand qualityModelCmd = conn.CreateCommand())
-            {
-                qualityModelCmd.Transaction = tran;
-                qualityModelCmd.CommandText = @"SELECT Distinct Quality FROM " + tableName;
-                using (IDataReader qualityModelReader = qualityModelCmd.ExecuteReader())
-                {
-                    while (qualityModelReader.Read())
-                    {
-                        var qualityJson = qualityModelReader.GetString(0);
+            // using (IDbCommand qualityModelCmd = conn.CreateCommand())
+            // {
+            //     qualityModelCmd.Transaction = tran;
+            //     qualityModelCmd.CommandText = @"SELECT Distinct Quality FROM " + tableName;
+            //     using (IDataReader qualityModelReader = qualityModelCmd.ExecuteReader())
+            //     {
+            //         while (qualityModelReader.Read())
+            //         {
+            //             var qualityJson = qualityModelReader.GetString(0);
 
-                        SourceQualityModel036 sourceQuality;
+            //             SourceQualityModel036 sourceQuality;
 
-                        if (!Json.TryDeserialize<SourceQualityModel036>(qualityJson, out sourceQuality))
-                        {
-                            continue;
-                        }
+            //             if (!Json.TryDeserialize<SourceQualityModel036>(qualityJson, out sourceQuality))
+            //             {
+            //                 continue;
+            //             }
 
-                        var qualityNewJson = qualityModelConverter.ToDB(new DestinationQualityModel036
-                                                                        {
-                                                                            Quality = sourceQuality.Quality.Id,
-                                                                            Proper = sourceQuality.Proper
-                                                                        });
+            //             var qualityNewJson = qualityModelConverter.ToDB(new DestinationQualityModel036
+            //                                                             {
+            //                                                                 Quality = sourceQuality.Quality.Id,
+            //                                                                 Proper = sourceQuality.Proper
+            //                                                             });
 
-                        using (IDbCommand updateCmd = conn.CreateCommand())
-                        {
-                            updateCmd.Transaction = tran;
-                            updateCmd.CommandText = "UPDATE " + tableName + " SET Quality = ? WHERE Quality = ?";
-                            updateCmd.AddParameter(qualityNewJson);
-                            updateCmd.AddParameter(qualityJson);
+            //             using (IDbCommand updateCmd = conn.CreateCommand())
+            //             {
+            //                 updateCmd.Transaction = tran;
+            //                 updateCmd.CommandText = "UPDATE " + tableName + " SET Quality = ? WHERE Quality = ?";
+            //                 updateCmd.AddParameter(qualityNewJson);
+            //                 updateCmd.AddParameter(qualityJson);
 
-                            updateCmd.ExecuteNonQuery();
-                        }
-                    }
-                }
-            }
+            //                 updateCmd.ExecuteNonQuery();
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         private class DestinationQualityModel036

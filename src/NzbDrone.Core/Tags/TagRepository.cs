@@ -20,19 +20,21 @@ namespace NzbDrone.Core.Tags
 
         public Tag GetByLabel(string label)
         {
-            var model = Query.Where(c => c.Label == label).SingleOrDefault();
+            return null;
+            // var model = Query.Where(c => c.Label == label).SingleOrDefault();
 
-            if (model == null)
-            {
-                throw new InvalidOperationException("Didn't find tag with label " + label);
-            }
+            // if (model == null)
+            // {
+            //     throw new InvalidOperationException("Didn't find tag with label " + label);
+            // }
 
-            return model;
+            // return model;
         }
 
         public Tag FindByLabel(string label)
         {
-            return Query.Where(c => c.Label == label).SingleOrDefault();
+            return null;
+            // return Query.Where(c => c.Label == label).SingleOrDefault();
         }
     }
 }

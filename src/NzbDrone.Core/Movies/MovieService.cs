@@ -363,11 +363,11 @@ namespace NzbDrone.Core.Movies
 
         public void Handle(MovieFileAddedEvent message)
         {
-            var movie = message.MovieFile.Movie.Value;
+            var movie = message.MovieFile.Movie;
             movie.MovieFileId = message.MovieFile.Id;
             _movieRepository.Update(movie);
             //_movieRepository.SetFileId(message.MovieFile.Id, message.MovieFile.Movie.Value.Id);
-            _logger.Info("Linking [{0}] > [{1}]", message.MovieFile.RelativePath, message.MovieFile.Movie.Value);
+            _logger.Info("Linking [{0}] > [{1}]", message.MovieFile.RelativePath, message.MovieFile.Movie);
         }
 
 		public void SetFileId(Movie movie, MovieFile movieFile)

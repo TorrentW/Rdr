@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.Messaging.Events;
 
@@ -34,17 +33,20 @@ namespace NzbDrone.Core.Extras.Files
 
         public List<TExtraFile> GetFilesByMovie(int movieId)
         {
-            return Query.Where(c => c.MovieId == movieId).ToList();
+            return new List<TExtraFile>();
+            // return Query.Where(c => c.MovieId == movieId).ToList();
         }
 
         public List<TExtraFile> GetFilesByMovieFile(int movieFileId)
         {
-            return Query.Where(c => c.MovieFileId == movieFileId).ToList();
+            return new List<TExtraFile>();
+            // return Query.Where(c => c.MovieFileId == movieFileId).ToList();
         }
 
         public TExtraFile FindByPath(string path)
         {
-            return Query.Where(c => c.RelativePath == path).SingleOrDefault();
+            return new TExtraFile();
+            // return Query.Where(c => c.RelativePath == path).SingleOrDefault();
         }
     }
 }

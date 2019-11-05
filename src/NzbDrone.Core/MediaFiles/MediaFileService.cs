@@ -40,8 +40,7 @@ namespace NzbDrone.Core.MediaFiles
         public MovieFile Add(MovieFile movieFile)
         {
             var addedFile = _mediaFileRepository.Insert(movieFile);
-            addedFile.Movie.LazyLoad();
-            if (addedFile.Movie == null || addedFile.Movie.Value == null)
+            if (addedFile.Movie == null)
             {
                 _logger.Error("Movie is null for the file {0}. Please run the houskeeping command to ensure movies and files are linked correctly.");
             }
@@ -64,8 +63,7 @@ namespace NzbDrone.Core.MediaFiles
         public void Delete(MovieFile movieFile, DeleteMediaFileReason reason)
         {
             //Little hack so we have the movie attached for the event consumers
-            movieFile.Movie.LazyLoad();
-            movieFile.Path = Path.Combine(movieFile.Movie.Value.Path, movieFile.RelativePath);
+            movieFile.Path = Path.Combine(movieFile.Movie.Path, movieFile.RelativePath);
 
             _mediaFileRepository.Delete(movieFile);
             _eventAggregator.PublishEvent(new MovieFileDeletedEvent(movieFile, reason));

@@ -1,148 +1,94 @@
 using System;
 using System.Collections.Generic;
-using Marr.Data;
-using Marr.Data.Mapping;
+using Dapper;
+using Dapper.Contrib.Extensions;
 using NzbDrone.Common.Reflection;
 using NzbDrone.Core.Blacklisting;
 using NzbDrone.Core.Configuration;
+using NzbDrone.Core.CustomFormats;
 using NzbDrone.Core.Datastore.Converters;
-using NzbDrone.Core.Datastore.Extensions;
 using NzbDrone.Core.Download;
-using NzbDrone.Core.Download.Pending;
+using NzbDrone.Core.Extras.Metadata;
+using NzbDrone.Core.Extras.Others;
 using NzbDrone.Core.Indexers;
-using NzbDrone.Core.Instrumentation;
-using NzbDrone.Core.Jobs;
-using NzbDrone.Core.MediaFiles;
-using NzbDrone.Core.Profiles.Delay;
-using NzbDrone.Core.RemotePathMappings;
+using NzbDrone.Core.Languages;
+using NzbDrone.Core.Messaging.Commands;
+using NzbDrone.Core.NetImport;
 using NzbDrone.Core.Notifications;
 using NzbDrone.Core.Organizer;
 using NzbDrone.Core.Parser.Model;
 using NzbDrone.Core.Profiles;
 using NzbDrone.Core.Qualities;
-using NzbDrone.Core.Restrictions;
-using NzbDrone.Core.RootFolders;
-using NzbDrone.Core.Tags;
 using NzbDrone.Core.ThingiProvider;
-using NzbDrone.Core.Movies;
-using NzbDrone.Common.Disk;
-using NzbDrone.Core.Authentication;
-using NzbDrone.Core.CustomFilters;
-using NzbDrone.Core.CustomFormats;
-using NzbDrone.Core.Extras.Metadata;
-using NzbDrone.Core.Extras.Metadata.Files;
-using NzbDrone.Core.Extras.Others;
-using NzbDrone.Core.Extras.Subtitles;
-using NzbDrone.Core.Messaging.Commands;
-using NzbDrone.Core.NetImport;
-using NzbDrone.Core.NetImport.ImportExclusions;
-using NzbDrone.Core.Movies.AlternativeTitles;
-using NzbDrone.Core.Languages;
+using static Dapper.SqlMapper;
 
 namespace NzbDrone.Core.Datastore
 {
     public static class TableMapping
     {
-        private static readonly FluentMappings Mapper = new FluentMappings(true);
-
         public static void Map()
         {
+            SqlMapperExtensions.TableNameMapper = TableNameMapping;
+
             RegisterMappers();
+        }
 
-            Mapper.Entity<Config>().RegisterModel("Config");
+        public static string TableNameMapping(Type entityType)
+        {
+            if (entityType == typeof(Config))
+            {
+                return "Config";
+            }
+            else if (entityType == typeof(DownloadClientDefinition))
+            {
+                return "DownloadClients";
+            }
+            else if (entityType == typeof(IndexerDefinition))
+            {
+                return "Indexers";
+            }
+            else if (entityType == typeof(NetImportDefinition))
+            {
+                return "NetImport";
+            }
+            else if (entityType == typeof(NotificationDefinition))
+            {
+                return "Notifications";
+            }
+            else if (entityType == typeof(MetadataDefinition))
+            {
+                return "Metadata";
+            }
+            else if (entityType == typeof(History.History))
+            {
+                return "History";
+            }
+            else if (entityType == typeof(NamingConfig))
+            {
+                return "NamingConfig";
+            }
+            else if (entityType == typeof(Blacklist))
+            {
+                return "Blacklist";
+            }
+            else if (entityType == typeof(OtherExtraFile))
+            {
+                return "ExtraFiles";
+            }
+            else if (entityType == typeof(CommandModel))
+            {
+                return "Commands";
+            }
+            else if (entityType == typeof(IndexerStatus))
+            {
+                return "IndexerStatus";
+            }
+            else if (entityType == typeof(DownloadClientStatus))
+            {
+                return "DownloadClientStatus";
+            }
 
-            Mapper.Entity<RootFolder>().RegisterModel("RootFolders")
-                  .Ignore(r => r.Accessible)
-                  .Ignore(r => r.FreeSpace)
-                  .Ignore(r => r.TotalSpace);
-
-            Mapper.Entity<ScheduledTask>().RegisterModel("ScheduledTasks");
-
-            Mapper.Entity<IndexerDefinition>().RegisterDefinition("Indexers")
-                  .Ignore(i => i.Enable)
-                  .Ignore(i => i.Protocol)
-                  .Ignore(i => i.SupportsRss)
-                  .Ignore(i => i.SupportsSearch)
-                  .Ignore(d => d.Tags);
-
-            Mapper.Entity<NetImportDefinition>().RegisterDefinition("NetImport")
-                .Ignore(i => i.Enable)
-                .Relationship()
-                .HasOne(n => n.Profile, n => n.ProfileId);
-
-            Mapper.Entity<NotificationDefinition>().RegisterDefinition("Notifications")
-                  .Ignore(i => i.SupportsOnGrab)
-                  .Ignore(i => i.SupportsOnDownload)
-                  .Ignore(i => i.SupportsOnUpgrade)
-                  .Ignore(i => i.SupportsOnRename)
-                  .Ignore(i => i.SupportsOnHealthIssue);
-
-            Mapper.Entity<MetadataDefinition>().RegisterDefinition("Metadata")
-                  .Ignore(d => d.Tags);
-
-            Mapper.Entity<DownloadClientDefinition>().RegisterDefinition("DownloadClients")
-                  .Ignore(d => d.Protocol)
-                  .Ignore(d => d.Tags);
-
-            Mapper.Entity<History.History>().RegisterModel("History")
-                  .AutoMapChildModels();
-
-           Mapper.Entity<MovieFile>().RegisterModel("MovieFiles")
-                .Ignore(f => f.Path)
-                .Relationships.AutoMapICollectionOrComplexProperties()
-                .For("Movie")
-                .LazyLoad(condition: parent => parent.Id > 0,
-                            query: (db, parent) => db.Query<Movie>().Where(c => c.MovieFileId == parent.Id).ToList())
-                .HasOne(file => file.Movie, file => file.MovieId);
-
-            Mapper.Entity<Movie>().RegisterModel("Movies")
-                .Ignore(s => s.RootFolderPath)
-                .Ignore(m => m.Actors)
-                .Relationship()
-                .HasOne(s => s.Profile, s => s.ProfileId);
-                //.HasOne(m => m.MovieFile, m => m.MovieFileId);
-
-            Mapper.Entity<AlternativeTitle>().RegisterModel("AlternativeTitles")
-                .For(t => t.Id)
-                .SetAltName("AltTitle_Id")
-                .Relationship()
-                .HasOne(t => t.Movie, t => t.MovieId);
-
-
-            Mapper.Entity<ImportExclusion>().RegisterModel("ImportExclusions");
-
-            Mapper.Entity<QualityDefinition>().RegisterModel("QualityDefinitions")
-                .Ignore(d => d.GroupName)
-                .Ignore(d => d.Weight)
-                .Relationship();
-
-            Mapper.Entity<CustomFormat>().RegisterModel("CustomFormats")
-                .Relationship();
-
-            Mapper.Entity<Profile>().RegisterModel("Profiles");
-            Mapper.Entity<Log>().RegisterModel("Logs");
-            Mapper.Entity<NamingConfig>().RegisterModel("NamingConfig");
-            Mapper.Entity<Blacklist>().RegisterModel("Blacklist");
-            Mapper.Entity<MetadataFile>().RegisterModel("MetadataFiles");
-            Mapper.Entity<SubtitleFile>().RegisterModel("SubtitleFiles");
-            Mapper.Entity<OtherExtraFile>().RegisterModel("ExtraFiles");
-
-            Mapper.Entity<PendingRelease>().RegisterModel("PendingReleases")
-                  .Ignore(e => e.RemoteMovie);
-
-            Mapper.Entity<RemotePathMapping>().RegisterModel("RemotePathMappings");
-            Mapper.Entity<Tag>().RegisterModel("Tags");
-            Mapper.Entity<Restriction>().RegisterModel("Restrictions");
-
-            Mapper.Entity<DelayProfile>().RegisterModel("DelayProfiles");
-            Mapper.Entity<User>().RegisterModel("Users");
-            Mapper.Entity<CommandModel>().RegisterModel("Commands")
-                .Ignore(c => c.Message);
-
-            Mapper.Entity<IndexerStatus>().RegisterModel("IndexerStatus");
-            Mapper.Entity<DownloadClientStatus>().RegisterModel("DownloadClientStatus");
-
-            Mapper.Entity<CustomFilter>().RegisterModel("CustomFilters");
+            return entityType.Name + "s";
         }
 
         private static void RegisterMappers()
@@ -150,32 +96,24 @@ namespace NzbDrone.Core.Datastore
             RegisterEmbeddedConverter();
             RegisterProviderSettingConverter();
 
-            MapRepository.Instance.RegisterTypeConverter(typeof(int), new Int32Converter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(double), new DoubleConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(DateTime), new UtcConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(bool), new BooleanIntConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(Enum), new EnumIntConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(Quality), new QualityIntConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(CustomFormat), new CustomFormatIntConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<ProfileQualityItem>), new EmbeddedDocumentConverter(new QualityIntConverter()));
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<ProfileFormatItem>), new EmbeddedDocumentConverter(new CustomFormatIntConverter()));
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<FormatTag>), new EmbeddedDocumentConverter(new QualityTagStringConverter()));
-            MapRepository.Instance.RegisterTypeConverter(typeof(QualityModel), new EmbeddedDocumentConverter(new CustomFormatIntConverter(), new QualityIntConverter()));
-            MapRepository.Instance.RegisterTypeConverter(typeof(Dictionary<string, string>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(IDictionary<string, string>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<int>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<KeyValuePair<string, int>>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(Language), new LanguageIntConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<Language>), new EmbeddedDocumentConverter(new LanguageIntConverter()));
-            MapRepository.Instance.RegisterTypeConverter(typeof(List<string>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(ParsedMovieInfo), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(ReleaseInfo), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(HashSet<int>), new EmbeddedDocumentConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(OsPath), new OsPathConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(Guid), new GuidConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(Command), new CommandConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(TimeSpan), new TimeSpanConverter());
-            MapRepository.Instance.RegisterTypeConverter(typeof(TimeSpan?), new TimeSpanConverter());
+            SqlMapper.AddTypeHandler(new DapperQualityIntConverter());
+            SqlMapper.AddTypeHandler(new DapperCustomFormatIntConverter());
+            SqlMapper.AddTypeHandler(new DapperLanguageIntConverter());
+            SqlMapper.AddTypeHandler(new OsPathConverter());
+            SqlMapper.AddTypeHandler(new GuidConverter());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<Language>>(new LanguageIntConverter()));
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<ProfileQualityItem>>(new QualityIntConverter()));
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<ProfileFormatItem>>(new CustomFormatIntConverter()));
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<FormatTag>>(new QualityTagStringConverter()));
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<QualityModel>(new CustomFormatIntConverter(), new QualityIntConverter()));
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<Dictionary<string, string>>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<IDictionary<string, string>>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<int>>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<KeyValuePair<string, int>>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<string>>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<ParsedMovieInfo>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<ReleaseInfo>());
+            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<HashSet<int>>());
         }
 
         private static void RegisterProviderSettingConverter()
@@ -185,7 +123,7 @@ namespace NzbDrone.Core.Datastore
             var providerSettingConverter = new ProviderSettingConverter();
             foreach (var embeddedType in settingTypes)
             {
-                MapRepository.Instance.RegisterTypeConverter(embeddedType, providerSettingConverter);
+                SqlMapper.AddTypeHandler(embeddedType, providerSettingConverter);
             }
         }
 
@@ -193,16 +131,24 @@ namespace NzbDrone.Core.Datastore
         {
             var embeddedTypes = typeof(IEmbeddedDocument).Assembly.ImplementationsOf<IEmbeddedDocument>();
 
-            var embeddedConvertor = new EmbeddedDocumentConverter();
+            var embeddedConverterDefinition = typeof(EmbeddedDocumentConverter<>).GetGenericTypeDefinition();
             var genericListDefinition = typeof(List<>).GetGenericTypeDefinition();
 
             foreach (var embeddedType in embeddedTypes)
             {
                 var embeddedListType = genericListDefinition.MakeGenericType(embeddedType);
 
-                MapRepository.Instance.RegisterTypeConverter(embeddedType, embeddedConvertor);
-                MapRepository.Instance.RegisterTypeConverter(embeddedListType, embeddedConvertor);
+                RegisterEmbeddedConverter(embeddedType, embeddedConverterDefinition);
+                RegisterEmbeddedConverter(embeddedListType, embeddedConverterDefinition);
             }
+        }
+
+        private static void RegisterEmbeddedConverter(Type embeddedType, Type embeddedConverterDefinition)
+        {
+            var embeddedConverterType = embeddedConverterDefinition.MakeGenericType(embeddedType);
+            var converter = (ITypeHandler) Activator.CreateInstance(embeddedConverterType);
+
+            SqlMapper.AddTypeHandler(embeddedType, converter);
         }
     }
 }

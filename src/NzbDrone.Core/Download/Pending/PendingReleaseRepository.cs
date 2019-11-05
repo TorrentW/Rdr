@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Dapper;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.Messaging.Events;
 
@@ -25,12 +27,13 @@ namespace NzbDrone.Core.Download.Pending
 
         public List<PendingRelease> AllByMovieId(int movieId)
         {
-            return Query.Where(p => p.MovieId == movieId).ToList();
+            return DataMapper.Query<PendingRelease>($"SELECT * FROM {_table} WHERE MovieId = {movieId}").ToList();
         }
 
         public List<PendingRelease> WithoutFallback()
         {
-            return Query.Where(p => p.Reason != PendingReleaseReason.Fallback);
+            return new List<PendingRelease>();
+            // return Query.Where(p => p.Reason != PendingReleaseReason.Fallback);
         }
     }
 }

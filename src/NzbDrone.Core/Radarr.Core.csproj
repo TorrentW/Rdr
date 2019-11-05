@@ -3,6 +3,8 @@
     <TargetFrameworks>net462;netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="Dapper.Contrib" Version="2.0.30" />
     <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="4.6.0" />
     <PackageReference Include="FluentMigrator.Runner" Version="4.0.0-alpha.268" />
@@ -18,7 +20,6 @@
     <PackageReference Include="System.Text.Json" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Marr.Data\Marr.Data.csproj" />
     <ProjectReference Include="..\MonoTorrent\MonoTorrent.csproj" />
     <ProjectReference Include="..\NzbDrone.Common\Radarr.Common.csproj" />
   </ItemGroup>

@@ -1,7 +1,7 @@
 using System.Data;
 using FluentMigrator;
 using NzbDrone.Core.Datastore.Migration.Framework;
-using NzbDrone.Core.Datastore.Converters;
+// using NzbDrone.Core.Datastore.Converters;
 using NzbDrone.Core.Languages;
 using System;
 using System.Collections.Generic;
@@ -31,83 +31,83 @@ namespace NzbDrone.Core.Datastore.Migration
 
         private void UpdateLanguage(IDbConnection conn, IDbTransaction tran)
         {
-            var LanguageConverter = new EmbeddedDocumentConverter(new LanguageIntConverter());
+            // var LanguageConverter = new EmbeddedDocumentConverter(new LanguageIntConverter());
 
-            var profileLanguages = new Dictionary<int, int>();
-            using (IDbCommand getProfileCmd = conn.CreateCommand())
-            {
-                getProfileCmd.Transaction = tran;
-                getProfileCmd.CommandText = "SELECT Id, Language FROM Profiles";
+            // var profileLanguages = new Dictionary<int, int>();
+            // using (IDbCommand getProfileCmd = conn.CreateCommand())
+            // {
+            //     getProfileCmd.Transaction = tran;
+            //     getProfileCmd.CommandText = "SELECT Id, Language FROM Profiles";
 
-                IDataReader profilesReader = getProfileCmd.ExecuteReader();
-                while (profilesReader.Read())
-                {
-                    var profileId = profilesReader.GetInt32(0);
-                    var movieLanguage = Language.English.Id;
-                    try
-                    {
-                        movieLanguage = profilesReader.GetInt32(1);
-                    }
-                    catch (InvalidCastException e)
-                    {
-                        _logger.Debug("Language field not found in Profiles, using English as default." + e.Message);
-                    }
+            //     IDataReader profilesReader = getProfileCmd.ExecuteReader();
+            //     while (profilesReader.Read())
+            //     {
+            //         var profileId = profilesReader.GetInt32(0);
+            //         var movieLanguage = Language.English.Id;
+            //         try
+            //         {
+            //             movieLanguage = profilesReader.GetInt32(1);
+            //         }
+            //         catch (InvalidCastException e)
+            //         {
+            //             _logger.Debug("Language field not found in Profiles, using English as default." + e.Message);
+            //         }
 
-                    profileLanguages[profileId] = movieLanguage;
-                }
-            }
+            //         profileLanguages[profileId] = movieLanguage;
+            //     }
+            // }
 
-            var movieLanguages = new Dictionary<int, int>();
+            // var movieLanguages = new Dictionary<int, int>();
 
-            using (IDbCommand getSeriesCmd = conn.CreateCommand())
-            {
-                getSeriesCmd.Transaction = tran;
-                getSeriesCmd.CommandText = @"SELECT Id, ProfileId FROM Movies";
-                using (IDataReader moviesReader = getSeriesCmd.ExecuteReader())
-                {
-                    while (moviesReader.Read())
-                    {
-                        var movieId = moviesReader.GetInt32(0);
-                        var movieProfileId = moviesReader.GetInt32(1);
+            // using (IDbCommand getSeriesCmd = conn.CreateCommand())
+            // {
+            //     getSeriesCmd.Transaction = tran;
+            //     getSeriesCmd.CommandText = @"SELECT Id, ProfileId FROM Movies";
+            //     using (IDataReader moviesReader = getSeriesCmd.ExecuteReader())
+            //     {
+            //         while (moviesReader.Read())
+            //         {
+            //             var movieId = moviesReader.GetInt32(0);
+            //             var movieProfileId = moviesReader.GetInt32(1);
 
-                        movieLanguages[movieId] = profileLanguages.GetValueOrDefault(movieProfileId, Language.English.Id);
-                    }
-                }
-            }
+            //             movieLanguages[movieId] = profileLanguages.GetValueOrDefault(movieProfileId, Language.English.Id);
+            //         }
+            //     }
+            // }
 
-            foreach (var group in movieLanguages.GroupBy(v => v.Value, v => v.Key))
-            {
-                var languageJson = LanguageConverter.ToDB(new List<Language> { Language.FindById(group.Key) });
+            // foreach (var group in movieLanguages.GroupBy(v => v.Value, v => v.Key))
+            // {
+            //     var languageJson = LanguageConverter.ToDB(new List<Language> { Language.FindById(group.Key) });
 
-                var movieIds = group.Select(v => v.ToString()).Join(",");
+            //     var movieIds = group.Select(v => v.ToString()).Join(",");
 
-                using (IDbCommand updateMovieFilesCmd = conn.CreateCommand())
-                {
-                    updateMovieFilesCmd.Transaction = tran;
-                    updateMovieFilesCmd.CommandText = $"UPDATE MovieFiles SET Languages = ? WHERE MovieId IN ({movieIds})";
-                    updateMovieFilesCmd.AddParameter(languageJson);
+            //     using (IDbCommand updateMovieFilesCmd = conn.CreateCommand())
+            //     {
+            //         updateMovieFilesCmd.Transaction = tran;
+            //         updateMovieFilesCmd.CommandText = $"UPDATE MovieFiles SET Languages = ? WHERE MovieId IN ({movieIds})";
+            //         updateMovieFilesCmd.AddParameter(languageJson);
 
-                    updateMovieFilesCmd.ExecuteNonQuery();
-                }
+            //         updateMovieFilesCmd.ExecuteNonQuery();
+            //     }
 
-                using (IDbCommand updateHistoryCmd = conn.CreateCommand())
-                {
-                    updateHistoryCmd.Transaction = tran;
-                    updateHistoryCmd.CommandText = $"UPDATE History SET Languages = ? WHERE MovieId IN ({movieIds})";
-                    updateHistoryCmd.AddParameter(languageJson);
+            //     using (IDbCommand updateHistoryCmd = conn.CreateCommand())
+            //     {
+            //         updateHistoryCmd.Transaction = tran;
+            //         updateHistoryCmd.CommandText = $"UPDATE History SET Languages = ? WHERE MovieId IN ({movieIds})";
+            //         updateHistoryCmd.AddParameter(languageJson);
 
-                    updateHistoryCmd.ExecuteNonQuery();
-                }
+            //         updateHistoryCmd.ExecuteNonQuery();
+            //     }
 
-                using (IDbCommand updateBlacklistCmd = conn.CreateCommand())
-                {
-                    updateBlacklistCmd.Transaction = tran;
-                    updateBlacklistCmd.CommandText = $"UPDATE Blacklist SET Languages = ? WHERE MovieId IN ({movieIds})";
-                    updateBlacklistCmd.AddParameter(languageJson);
+            //     using (IDbCommand updateBlacklistCmd = conn.CreateCommand())
+            //     {
+            //         updateBlacklistCmd.Transaction = tran;
+            //         updateBlacklistCmd.CommandText = $"UPDATE Blacklist SET Languages = ? WHERE MovieId IN ({movieIds})";
+            //         updateBlacklistCmd.AddParameter(languageJson);
 
-                    updateBlacklistCmd.ExecuteNonQuery();
-                }
-            }
+            //         updateBlacklistCmd.ExecuteNonQuery();
+            //     }
+            // }
         }
     }
 }

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.Messaging.Events;
-using Marr.Data.QGen;
 using NzbDrone.Core.Movies;
 
 namespace NzbDrone.Core.Blacklisting
@@ -22,26 +21,29 @@ namespace NzbDrone.Core.Blacklisting
 
         public List<Blacklist> BlacklistedByTitle(int movieId, string sourceTitle)
         {
-            return Query.Where(e => e.MovieId == movieId)
-                        .AndWhere(e => e.SourceTitle.Contains(sourceTitle)).ToList();
+            // return Query.Where(e => e.MovieId == movieId)
+            //             .AndWhere(e => e.SourceTitle.Contains(sourceTitle)).ToList();
+            return new List<Blacklist>();
         }
 
         public List<Blacklist> BlacklistedByTorrentInfoHash(int movieId, string torrentInfoHash)
         {
-            return Query.Where(e => e.MovieId == movieId)
-                        .AndWhere(e => e.TorrentInfoHash.Contains(torrentInfoHash)).ToList();
+            // return Query.Where(e => e.MovieId == movieId)
+            //             .AndWhere(e => e.TorrentInfoHash.Contains(torrentInfoHash)).ToList();
+            return new List<Blacklist>();
         }
 
         public List<Blacklist> BlacklistedByMovie(int movieId)
         {
-            return Query.Where(b => b.MovieId == movieId).ToList();
+            // return Query.Where(b => b.MovieId == movieId).ToList();
+            return new List<Blacklist>();
         }
 
-        protected override SortBuilder<Blacklist> GetPagedQuery(QueryBuilder<Blacklist> query, PagingSpec<Blacklist> pagingSpec)
-        {
-            var baseQuery = query.Join<Blacklist, Movie>(JoinType.Inner, h => h.Movie, (h, s) => h.MovieId == s.Id);
+        // protected override SortBuilder<Blacklist> GetPagedQuery(QueryBuilder<Blacklist> query, PagingSpec<Blacklist> pagingSpec)
+        // {
+        //     var baseQuery = query.Join<Blacklist, Movie>(JoinType.Inner, h => h.Movie, (h, s) => h.MovieId == s.Id);
 
-            return base.GetPagedQuery(baseQuery, pagingSpec);
-        }
+        //     return base.GetPagedQuery(baseQuery, pagingSpec);
+        // }
     }
 }

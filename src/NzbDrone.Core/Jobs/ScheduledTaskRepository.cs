@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using Dapper;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.Messaging.Events;
 
@@ -22,7 +22,7 @@ namespace NzbDrone.Core.Jobs
 
         public ScheduledTask GetDefinition(Type type)
         {
-            return Query.Where(c => c.TypeName == type.FullName).Single();
+            return DataMapper.QuerySingle<ScheduledTask>($"SELECT * FROM {_table} where TypeName = @TypeName", new { TypeName = type.FullName });
         }
 
         public void SetLastExecutionTime(int id, DateTime executionTime)

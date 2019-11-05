@@ -1,3 +1,4 @@
+using Dapper.Contrib.Extensions;
 using NzbDrone.Core.Datastore;
 
 namespace NzbDrone.Core.Qualities
@@ -5,9 +6,11 @@ namespace NzbDrone.Core.Qualities
     public class QualityDefinition : ModelBase
     {
         public Quality Quality { get; set; }
-
         public string Title { get; set; }
+
+        [Write(false)]
         public string GroupName { get; set; }
+        [Write(false)]
         public int Weight { get; set; }
 
         public double? MinSize { get; set; }

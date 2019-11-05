@@ -20,12 +20,14 @@ namespace NzbDrone.Core.Authentication
 
         public User FindUser(string username)
         {
-            return Query.Where(u => u.Username == username).SingleOrDefault();
+            return All().FirstOrDefault();
+            // return Query.Where(u => u.Username == username).SingleOrDefault();
         }
 
         public User FindUser(Guid identifier)
         {
-            return Query.Where(u => u.Identifier == identifier).SingleOrDefault();
+            return All().FirstOrDefault();
+            // return Query.Where(u => u.Identifier == identifier).SingleOrDefault();
         }
     }
 }

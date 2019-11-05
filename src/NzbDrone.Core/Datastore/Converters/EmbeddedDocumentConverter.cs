@@ -1,16 +1,16 @@
 ﻿using System;
+using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Marr.Data.Converters;
-using Marr.Data.Mapping;
+using Dapper;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class EmbeddedDocumentConverter : IConverter
+    public class EmbeddedDocumentConverter<T> : SqlMapper.TypeHandler<T>
     {
         private readonly JsonSerializerOptions SerializerSettings;
 
-        public EmbeddedDocumentConverter(params JsonConverter[] converters)
+        public EmbeddedDocumentConverter()
         {
             var serializerSettings = new JsonSerializerOptions
             {
@@ -27,43 +27,27 @@ namespace NzbDrone.Core.Datastore.Converters
             serializerSettings.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, false));
             serializerSettings.Converters.Add(new TimeSpanConverter());
 
-            foreach (var converter in converters)
-            {
-                serializerSettings.Converters.Add(converter);
-            }
-
             SerializerSettings = serializerSettings;
         }
 
-        public virtual object FromDB(ConverterContext context)
+        public EmbeddedDocumentConverter(params JsonConverter[] converters) : this()
         {
-            if (context.DbValue == DBNull.Value)
+            foreach (var converter in converters)
             {
-                return DBNull.Value;
+                SerializerSettings.Converters.Add(converter);
             }
-
-            var stringValue = (string)context.DbValue;
-
-            if (string.IsNullOrWhiteSpace(stringValue))
-            {
-                return null;
-            }
-            return JsonSerializer.Deserialize(stringValue, context.ColumnMap.FieldType, SerializerSettings);
-        }
-
-        public object FromDB(ColumnMap map, object dbValue)
-        {
-            return FromDB(new ConverterContext { ColumnMap = map, DbValue = dbValue });
-        }
-
-        public object ToDB(object clrValue)
-        {
-            if (clrValue == null) return null;
-            if (clrValue == DBNull.Value) return DBNull.Value;
-
-            return JsonSerializer.Serialize(clrValue, SerializerSettings);
         }
 
         public Type DbType => typeof(string);
+
+        public override void SetValue(IDbDataParameter parameter, T doc)
+        {
+            parameter.Value = JsonSerializer.Serialize(doc, SerializerSettings);
+        }
+
+        public override T Parse(object value)
+        {
+            return JsonSerializer.Deserialize<T>((string) value, SerializerSettings);
+        }
     }
 }

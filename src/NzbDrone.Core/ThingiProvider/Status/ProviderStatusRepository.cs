@@ -24,7 +24,8 @@ namespace NzbDrone.Core.ThingiProvider.Status
 
         public TModel FindByProviderId(int providerId)
         {
-            return Query.Where(c => c.ProviderId == providerId).SingleOrDefault();
+            // return Query.Where(c => c.ProviderId == providerId).SingleOrDefault();
+            return null;
         }
     }
 }

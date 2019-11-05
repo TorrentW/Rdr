@@ -1,51 +1,32 @@
 ﻿using System;
-using Marr.Data.Converters;
-using Marr.Data.Mapping;
 using NzbDrone.Core.CustomFormats;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Dapper;
+using System.Data;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class QualityTagStringConverter : JsonConverter<FormatTag>, IConverter
+    public class DapperQualityTagStringConverter : SqlMapper.TypeHandler<FormatTag>
     {
-        public object FromDB(ConverterContext context)
+        public override void SetValue(IDbDataParameter parameter, FormatTag value)
         {
-            if (context.DbValue == DBNull.Value)
+            parameter.Value = value.Raw;
+        }
+
+        public override FormatTag Parse(object value)
+        {
+            if (value == null || value is DBNull)
             {
                 return new FormatTag(""); //Will throw argument exception!
             }
 
-            var val = Convert.ToString(context.DbValue);
-
-            return new FormatTag(val);
+            return new FormatTag(Convert.ToString(value));
         }
+    }
 
-        public object FromDB(ColumnMap map, object dbValue)
-        {
-            return FromDB(new ConverterContext { ColumnMap = map, DbValue = dbValue });
-        }
-
-        public object ToDB(object clrValue)
-        {
-            if(clrValue == DBNull.Value) return 0;
-
-            if(!(clrValue is FormatTag))
-            {
-                throw new InvalidOperationException("Attempted to save a quality tag that isn't really a quality tag");
-            }
-
-            var quality = (FormatTag) clrValue;
-            return quality.Raw;
-        }
-
-        public Type DbType => typeof(string);
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(FormatTag);
-        }
-
+    public class QualityTagStringConverter : JsonConverter<FormatTag>
+    {
         public override FormatTag Read(ref Utf8JsonReader reader, Type objectType, JsonSerializerOptions options)
         {
             var item = reader.GetString();
@@ -54,7 +35,7 @@ namespace NzbDrone.Core.Datastore.Converters
 
         public override void Write(Utf8JsonWriter writer, FormatTag value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue((string)ToDB(value));
+            writer.WriteStringValue((string) value.Raw);
         }
     }
 }
