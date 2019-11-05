@@ -31,7 +31,7 @@ namespace NzbDrone.Core.Messaging.Commands
         {
             var date = DateTime.UtcNow.AddDays(-1);
 
-            Delete(c => c.EndedAt < date);
+            // Delete(c => c.EndedAt < date);
         }
 
         public void OrphanStarted()

@@ -22,7 +22,7 @@ namespace NzbDrone.Core.Download.Pending
 
         public void DeleteByMovieId(int movieId)
         {
-            Delete(r => r.MovieId == movieId);
+            Delete(movieId);
         }
 
         public List<PendingRelease> AllByMovieId(int movieId)

@@ -29,42 +29,58 @@ namespace NzbDrone.Core.Movies
 
     public class MovieRepository : BasicRepository<Movie>, IMovieRepository
     {
-		protected IMainDatabase _database;
-
-        private string _baseQuery = @"SELECT * FROM Movies
-LEFT JOIN AlternativeTitles ON Movies.Id = AlternativeTitles.MovieId
-LEFT JOIN MovieFiles ON Movies.Id = MovieFiles.MovieId";
-
         public MovieRepository(IMainDatabase database, IEventAggregator eventAggregator)
             : base(database, eventAggregator)
         {
-			_database = database;
-            // MapRepository.Instance.EnableTraceLogging = true;
-            // Trace.Listeners.Add(new ConsoleTraceListener());
         }
 
-        public override IEnumerable<Movie> All()
+        protected override SqlBuilder Builder()
         {
-            var movieDictionary = new Dictionary<int, Movie>();
-            var list = DataMapper.Query<Movie, AlternativeTitle, MovieFile, Movie>(_baseQuery, (movie, altTitle, file) =>
-                {
-                    Movie movieEntry;
-
-                    if (!movieDictionary.TryGetValue(movie.Id, out movieEntry))
-                    {
-                        movieEntry = movie;
-                        movieEntry.MovieFile = file;
-                        movieDictionary.Add(movieEntry.Id, movieEntry);
-                    }
-
-                    movieEntry.AlternativeTitles.Add(altTitle);
-                    return movieEntry;
-                }).ToList();
-
-            Console.WriteLine($"Got {list.Count} movies");
-
-            return list;
+            return new SqlBuilder()
+                .Select("*")
+                .LeftJoin("AlternativeTitles ON AlternativeTitles.MovieId = Movies.Id")
+                .LeftJoin("MovieFiles ON MovieFiles.MovieId = Movies.Id");
         }
+
+        private Movie Map(Dictionary<int, Movie> dict, Movie movie, AlternativeTitle altTitle, MovieFile movieFile)
+        {
+            Movie movieEntry;
+
+            if (!dict.TryGetValue(movie.Id, out movieEntry))
+            {
+                movieEntry = movie;
+                movieEntry.MovieFile = movieFile;
+                dict.Add(movieEntry.Id, movieEntry);
+            }
+
+            movieEntry.AlternativeTitles.Add(altTitle);
+            return movieEntry;
+        }
+
+        protected override Movie SelectOne(SqlBuilder.Template sql)
+        {
+            return SelectMany(sql).FirstOrDefault();
+        }
+
+        protected override IEnumerable<Movie> SelectMany(SqlBuilder.Template sql)
+        {
+            Console.WriteLine($"Sql: {sql.RawSql}, Params: {sql.Parameters}");
+            var movieDictionary = new Dictionary<int, Movie>();
+            return DataMapper.Query<Movie, AlternativeTitle, MovieFile, Movie>(
+                sql.RawSql,
+                (movie, altTitle, file) => Map(movieDictionary, movie, altTitle, file),
+                sql.Parameters)
+                .ToList();
+        }
+
+        // public override IEnumerable<Movie> All()
+        // {
+        //     var sql = Builder().AddTemplate(_template);
+        //     var list = SelectMany(sql);
+        //     Console.WriteLine($"Got {list.Count()} movies");
+
+        //     return list;
+        // }
 
         public bool MoviePathExists(string path)
         {

@@ -23,12 +23,12 @@ namespace NzbDrone.Core.Extras.Files
 
         public void DeleteForMovie(int movieId)
         {
-            Delete(c => c.MovieId == movieId);
+            Delete(movieId);
         }
 
         public void DeleteForMovieFile(int movieFileId)
         {
-            Delete(c => c.MovieFileId == movieFileId);
+            // Delete(c => c.MovieFileId == movieFileId);
         }
 
         public List<TExtraFile> GetFilesByMovie(int movieId)

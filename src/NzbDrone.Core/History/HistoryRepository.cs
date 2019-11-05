@@ -77,7 +77,7 @@ namespace NzbDrone.Core.History
 
         public void DeleteForMovie(int movieId)
         {
-            Delete(c => c.MovieId == movieId);
+            // Delete(c => c.MovieId == movieId);
         }
 
         // protected override SortBuilder<History> GetPagedQuery(QueryBuilder<History> query, PagingSpec<History> pagingSpec)

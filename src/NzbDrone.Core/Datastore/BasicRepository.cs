@@ -37,7 +37,9 @@ namespace NzbDrone.Core.Datastore
     {
         private readonly IDatabase _database;
         private readonly IEventAggregator _eventAggregator;
+
         protected readonly string _table;
+        protected string _template;
 
         protected IDbConnection DataMapper => _database.GetDataMapper();
 
@@ -47,16 +49,30 @@ namespace NzbDrone.Core.Datastore
             _eventAggregator = eventAggregator;
 
             _table = TableMapping.TableNameMapping(typeof(TModel));
+            _template = $"SELECT /**select**/ FROM {_table} /**leftjoin**/ /**innerjoin**/ /**where**/ /**--parameters**/";
         }
 
-        protected void Delete(Expression<Func<TModel, bool>> filter)
+        protected virtual SqlBuilder Builder()
         {
-            DataMapper.Delete(filter);
+            return new SqlBuilder().Select("*");
+        }
+
+        protected virtual TModel SelectOne(SqlBuilder.Template sql)
+        {
+            Console.WriteLine($"Sql: {sql.RawSql}, Params: {sql.Parameters}");
+            return DataMapper.QueryFirstOrDefault<TModel>(sql.RawSql, sql.Parameters);
+        }
+
+        protected virtual IEnumerable<TModel> SelectMany(SqlBuilder.Template sql)
+        {
+            Console.WriteLine($"Sql: {sql.RawSql}, Params: {sql.Parameters}");
+            return DataMapper.Query<TModel>(sql.RawSql, sql.Parameters);
         }
 
         public virtual IEnumerable<TModel> All()
         {
-            return DataMapper.GetAll<TModel>();
+            var sql = Builder().AddTemplate(_template);
+            return SelectMany(sql);
         }
 
         public int Count()
@@ -66,7 +82,10 @@ namespace NzbDrone.Core.Datastore
 
         public TModel Get(int id)
         {
-            var model = DataMapper.Get<TModel>(id);
+            var sql = Builder()
+                .Where($"Id = {id}")
+                .AddTemplate(_template);
+            var model = SelectOne(sql);
 
             if (model == null)
             {
@@ -79,7 +98,11 @@ namespace NzbDrone.Core.Datastore
         public IEnumerable<TModel> Get(IEnumerable<int> ids)
         {
             var idList = ids.ToList();
-            var result = DataMapper.Query<TModel>("SELECT * FROM {_table} WHERE Id in @Ids", new { Ids = idList });
+            var sql = Builder()
+                .Where($"Id in @Ids")
+                .AddTemplate(_template, new {Ids = idList});
+
+            var result = SelectMany(sql);
 
             var count = result.Count();
             if (count != idList.Count)
