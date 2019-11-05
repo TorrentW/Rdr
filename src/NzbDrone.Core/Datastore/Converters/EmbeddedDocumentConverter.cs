@@ -1,34 +1,38 @@
 ﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Marr.Data.Converters;
 using Marr.Data.Mapping;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json.Converters;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
     public class EmbeddedDocumentConverter : IConverter
     {
-        private readonly JsonSerializerSettings SerializerSetting;
+        private readonly JsonSerializerOptions SerializerSettings;
 
         public EmbeddedDocumentConverter(params JsonConverter[] converters)
         {
-            SerializerSetting = new JsonSerializerSettings
+            var serializerSettings = new JsonSerializerOptions
             {
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                NullValueHandling = NullValueHandling.Ignore,
-                Formatting = Formatting.Indented,
-                DefaultValueHandling = DefaultValueHandling.Include,
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
+                AllowTrailingCommas = true,
+                IgnoreNullValues = false,
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+
+                // DateTimeZoneHandling = DateTimeZoneHandling.Utc,
             };
 
-            SerializerSetting.Converters.Add(new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() });
-            SerializerSetting.Converters.Add(new VersionConverter());
+            // serializerSettings.Converters.Add(new HttpUriConverter());
+            serializerSettings.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, false));
+            serializerSettings.Converters.Add(new TimeSpanConverter());
 
             foreach (var converter in converters)
             {
-                SerializerSetting.Converters.Add(converter);
+                serializerSettings.Converters.Add(converter);
             }
+
+            SerializerSettings = serializerSettings;
         }
 
         public virtual object FromDB(ConverterContext context)
@@ -44,7 +48,7 @@ namespace NzbDrone.Core.Datastore.Converters
             {
                 return null;
             }
-            return JsonConvert.DeserializeObject(stringValue, context.ColumnMap.FieldType, SerializerSetting);
+            return JsonSerializer.Deserialize(stringValue, context.ColumnMap.FieldType, SerializerSettings);
         }
 
         public object FromDB(ColumnMap map, object dbValue)
@@ -57,7 +61,7 @@ namespace NzbDrone.Core.Datastore.Converters
             if (clrValue == null) return null;
             if (clrValue == DBNull.Value) return DBNull.Value;
 
-            return JsonConvert.SerializeObject(clrValue, SerializerSetting);
+            return JsonSerializer.Serialize(clrValue, SerializerSettings);
         }
 
         public Type DbType => typeof(string);

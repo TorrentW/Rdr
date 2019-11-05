@@ -2,11 +2,12 @@
 using Marr.Data.Converters;
 using Marr.Data.Mapping;
 using NzbDrone.Core.Qualities;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class QualityIntConverter : JsonConverter, IConverter
+    public class QualityIntConverter : JsonConverter<Quality>, IConverter
     {
         public object FromDB(ConverterContext context)
         {
@@ -40,20 +41,15 @@ namespace NzbDrone.Core.Datastore.Converters
 
         public Type DbType => typeof(int);
 
-        public override bool CanConvert(Type objectType)
+        public override Quality Read(ref Utf8JsonReader reader, Type objectType, JsonSerializerOptions options)
         {
-            return objectType == typeof(Quality);
+            var item = reader.GetInt32();
+            return (Quality)item;
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Quality value, JsonSerializerOptions serializer)
         {
-            var item = reader.Value;
-            return (Quality)Convert.ToInt32(item);
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            writer.WriteValue(ToDB(value));
+            writer.WriteNumberValue((int) value);
         }
     }
 }

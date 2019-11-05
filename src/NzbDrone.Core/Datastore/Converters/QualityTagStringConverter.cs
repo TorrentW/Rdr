@@ -1,13 +1,13 @@
 ﻿using System;
 using Marr.Data.Converters;
 using Marr.Data.Mapping;
-using NzbDrone.Core.Qualities;
-using Newtonsoft.Json;
 using NzbDrone.Core.CustomFormats;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class QualityTagStringConverter : JsonConverter, IConverter
+    public class QualityTagStringConverter : JsonConverter<FormatTag>, IConverter
     {
         public object FromDB(ConverterContext context)
         {
@@ -46,15 +46,15 @@ namespace NzbDrone.Core.Datastore.Converters
             return objectType == typeof(FormatTag);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override FormatTag Read(ref Utf8JsonReader reader, Type objectType, JsonSerializerOptions options)
         {
-            var item = reader.Value;
+            var item = reader.GetString();
             return new FormatTag(Convert.ToString(item));
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, FormatTag value, JsonSerializerOptions options)
         {
-            writer.WriteValue(ToDB(value));
+            writer.WriteStringValue((string)ToDB(value));
         }
     }
 }

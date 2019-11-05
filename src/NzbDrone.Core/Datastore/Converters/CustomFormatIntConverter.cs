@@ -1,14 +1,13 @@
 ﻿using System;
-using System.ServiceModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Marr.Data.Converters;
 using Marr.Data.Mapping;
-using NzbDrone.Core.Qualities;
-using Newtonsoft.Json;
 using NzbDrone.Core.CustomFormats;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class CustomFormatIntConverter : JsonConverter, IConverter
+    public class CustomFormatIntConverter : JsonConverter<CustomFormat>, IConverter
     {
         //TODO think of something better.
         public object FromDB(ConverterContext context)
@@ -64,11 +63,9 @@ namespace NzbDrone.Core.Datastore.Converters
             return objectType == typeof(CustomFormat);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override CustomFormat Read(ref Utf8JsonReader reader, Type objectType, JsonSerializerOptions options)
         {
-            var item = reader.Value;
-
-            var val = Convert.ToInt32(item);
+            var val = reader.GetInt32();
 
             if (val == 0)
             {
@@ -83,9 +80,9 @@ namespace NzbDrone.Core.Datastore.Converters
             return CustomFormatService.AllCustomFormats[val];
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, CustomFormat value, JsonSerializerOptions options)
         {
-            writer.WriteValue(ToDB(value));
+            writer.WriteNumberValue(value.Id);
         }
     }
 }

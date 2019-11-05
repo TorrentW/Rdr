@@ -15,6 +15,7 @@
     <PackageReference Include="TinyTwitter" Version="1.1.2" />
     <PackageReference Include="Kveer.XmlRPC" Version="1.1.1" />
     <PackageReference Include="System.Data.SQLite.Core.Lidarr" Version="1.0.111.0-5" />
+    <PackageReference Include="System.Text.Json" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Marr.Data\Marr.Data.csproj" />

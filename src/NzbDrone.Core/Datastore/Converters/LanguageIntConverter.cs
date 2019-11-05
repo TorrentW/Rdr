@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Marr.Data.Converters;
 using Marr.Data.Mapping;
-using Newtonsoft.Json;
 using NzbDrone.Core.Languages;
 
 namespace NzbDrone.Core.Datastore.Converters
 {
-    public class LanguageIntConverter : JsonConverter, IConverter
+    public class LanguageIntConverter : JsonConverter<Language>, IConverter
     {
         public object FromDB(ConverterContext context)
         {
@@ -51,15 +52,15 @@ namespace NzbDrone.Core.Datastore.Converters
             return objectType == typeof(Language);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override Language Read(ref Utf8JsonReader reader, Type objectType, JsonSerializerOptions options)
         {
-            var item = reader.Value;
-            return (Language)Convert.ToInt32(item);
+            var item = reader.GetInt32();
+            return (Language)item;
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Language value, JsonSerializerOptions options)
         {
-            writer.WriteValue(ToDB(value));
+            writer.WriteNumberValue((int) value);
         }
     }
 }

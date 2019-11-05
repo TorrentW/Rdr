@@ -10,6 +10,8 @@ using NzbDrone.Core.Movies.AlternativeTitles;
 using NzbDrone.Core.Parser.RomanNumerals;
 using NzbDrone.Core.Qualities;
 using CoreParser = NzbDrone.Core.Parser.Parser;
+using Marr.Data;
+using System.Diagnostics;
 
 namespace NzbDrone.Core.Movies
 {
@@ -38,6 +40,8 @@ namespace NzbDrone.Core.Movies
             : base(database, eventAggregator)
         {
 			_database = database;
+            // MapRepository.Instance.EnableTraceLogging = true;
+            // Trace.Listeners.Add(new ConsoleTraceListener());
         }
 
         public bool MoviePathExists(string path)
